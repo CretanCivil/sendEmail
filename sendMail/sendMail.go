@@ -53,7 +53,13 @@ func (this *SendMail)sendMail(attach string,subject string,to string,userName st
 	m.SetHeader("To", to)
 	m.SetHeader("Subject", subject)
 	m.SetBody("text/html", userName+":<br/>您好!<br/>"+subject+"工资单请查收!")
-	m.Attach(attach)
+
+	_,fname := path.Split(attach)
+
+	h := make(map[string][]string, 0)
+	h["Content-Type"] = []string{`application/octet-stream; charset=utf-8; name="` + fname + `"`} //要设置这个，否则中文会乱码
+	fileSetting := gomail.SetHeader(h)
+	m.Attach(attach,fileSetting)
 
 	d := gomail.NewDialer(this.config.MailServer.Server, this.config.MailServer.Port, this.config.MailServer.Account, this.config.MailServer.Password)
 	if err := d.DialAndSend(m); err != nil {
