@@ -1,1 +1,0 @@
-send.exe s --config config.toml

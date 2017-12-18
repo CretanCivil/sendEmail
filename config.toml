@@ -7,7 +7,7 @@ file = "C:/Users/WXH/Desktop/工资条格式.xlsx"
     name = "c"
     sheet = "工资 "
 [mail]
-    password = "Wang0000"
+    password = "000"
     account = "wangxiaohua@91ruler.com"
     server = "smtp.exmail.qq.com"
     port = 25
