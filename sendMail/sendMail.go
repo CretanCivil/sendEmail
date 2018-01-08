@@ -11,15 +11,18 @@ import (
 	"path"
 	"path/filepath"
 	"gopkg.in/gomail.v2"
+	"time"
 )
 
 type SendMail struct {
 	config config.Config
+	errorCount int
 }
 
 func New(config config.Config) *SendMail {
 	return &SendMail{
 		config:config,
+		errorCount:0,
 	}
 }
 
@@ -48,6 +51,7 @@ func (this*SendMail) CopyTempfile(filename string)  {
 }
 
 func (this *SendMail)sendMail(attach string,subject string,to string,userName string)  {
+	fmt.Printf("正在发送邮件给:%s\t",userName)
 	m := gomail.NewMessage()
 	m.SetHeader("From", this.config.MailServer.Account)
 	m.SetHeader("To", to)
@@ -58,16 +62,27 @@ func (this *SendMail)sendMail(attach string,subject string,to string,userName st
 
 	h := make(map[string][]string, 0)
 	h["Content-Type"] = []string{`application/octet-stream; charset=utf-8; name="` + fname + `"`} //要设置这个，否则中文会乱码
+	h["Content-Disposition"] = []string{`attachment; filename*=utf-8''` + fname + ``} //要设置这个，否则中文会乱码
 	fileSetting := gomail.SetHeader(h)
 	m.Attach(attach,fileSetting)
 
 	d := gomail.NewDialer(this.config.MailServer.Server, this.config.MailServer.Port, this.config.MailServer.Account, this.config.MailServer.Password)
 	if err := d.DialAndSend(m); err != nil {
 		log.Fatalln(err)
+		this.errorCount++
 		//panic(err)
-		os.Exit(-1)
-	}
+		if this.errorCount > 10 {
+			fmt.Println("发送失败，重试10次无效，程序退出")
+			os.Exit(-1)
+		} else {
+			fmt.Println("发送失败，5秒后重试")
+			time.Sleep(time.Second * 5)
+		}
 
+	}
+	this.errorCount = 0
+	fmt.Println("发送完成")
+	os.Remove(attach)
 }
 
 func (this *SendMail) Start() {
@@ -116,8 +131,8 @@ func (this *SendMail) Start() {
 			dstFile.SetCellValue(this.config.SheetName,col+fmt.Sprintf("%d",this.config.RowBegin),value)
 		}
 
-		dstFile.SaveAs("temp/"+userName + fname)
-		this.sendMail("temp/"+userName + fname,finfo.Name()[:len(finfo.Name())-5],to,userName)
+		dstFile.SaveAs("temp/"+userName +" "+ fname)
+		this.sendMail("temp/"+userName +" " + fname,finfo.Name()[:len(finfo.Name())-5],to,userName)
 	}
 
 	os.RemoveAll("temp/")
