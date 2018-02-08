@@ -68,7 +68,7 @@ func (this *SendMail)sendMail(attach string,subject string,to string,userName st
 
 	d := gomail.NewDialer(this.config.MailServer.Server, this.config.MailServer.Port, this.config.MailServer.Account, this.config.MailServer.Password)
 	if err := d.DialAndSend(m); err != nil {
-		log.Fatalln(err)
+		//log.Fatalln(err)
 		this.errorCount++
 		//panic(err)
 		if this.errorCount > 10 {
@@ -112,11 +112,13 @@ func (this *SendMail) Start() {
 			return
 		}
 
-		for j := cb; j <= int('A')+52;  j++{
+		for j := cb; j <= int('Z')+3;  j++{
 			col :=  string(j)
 			if j > int('Z') {
 				col = "A"+ string(j-int('Z')+int('A')-1)
 			}
+
+			//fmt.Println(col);
 
 			axis := col+fmt.Sprintf("%d",i)
 
@@ -129,6 +131,10 @@ func (this *SendMail) Start() {
 
 			value := xlFile.GetCellValue(this.config.SheetName,axis)
 			dstFile.SetCellValue(this.config.SheetName,col+fmt.Sprintf("%d",this.config.RowBegin),value)
+		}
+		value := dstFile.GetCellValue(this.config.SheetName,"AC"+fmt.Sprintf("%d",this.config.RowBegin))
+		if len(value) == 0 {
+			dstFile.SetCellValue(this.config.SheetName,"AC"+fmt.Sprintf("%d",this.config.RowBegin - 1),"")
 		}
 
 		dstFile.SaveAs("temp/"+userName +" "+ fname)
