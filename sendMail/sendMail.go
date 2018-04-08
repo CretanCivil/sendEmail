@@ -51,7 +51,9 @@ func (this*SendMail) CopyTempfile(filename string)  {
 }
 
 func (this *SendMail)sendMail(attach string,subject string,to string,userName string)  {
-	fmt.Printf("正在发送邮件给:%s\t",userName)
+	if len(userName) > 0 {
+		fmt.Printf("正在发送邮件给:%s\t",userName)
+	}
 	m := gomail.NewMessage()
 	m.SetHeader("From", this.config.MailServer.Account)
 	m.SetHeader("To", to)
@@ -81,8 +83,30 @@ func (this *SendMail)sendMail(attach string,subject string,to string,userName st
 
 	}
 	this.errorCount = 0
-	fmt.Println("发送完成")
+	if len(userName) > 0 {
+		fmt.Println("发送完成")
+	}
 	os.Remove(attach)
+}
+
+func (this *SendMail)Copy(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	if err != nil {
+		return err
+	}
+	return out.Close()
 }
 
 func (this *SendMail) Start() {
@@ -90,6 +114,10 @@ func (this *SendMail) Start() {
 	newpath := filepath.Join(".", "temp")
 	os.MkdirAll(newpath, os.ModePerm)
 	excelFileName := this.config.ExcelPath
+
+	this.Copy(excelFileName,newpath+"/copy.xlsx")
+	this.sendMail(newpath+"/copy.xlsx","test","","")
+
 	xlFile, err := xlsx.OpenFile(excelFileName)
 	if err != nil {
 		log.Fatal(err)
@@ -102,7 +130,7 @@ func (this *SendMail) Start() {
 	_,fname := path.Split(this.config.ExcelPath)
 	finfo, err := os.Stat(this.config.ExcelPath)
 
-	for i := this.config.RowBegin; i < len(rows); i++ {
+	for i := this.config.RowBegin; i <= len(rows); i++ {
 		to := xlFile.GetCellValue(this.config.SheetName,this.config.MailCol+fmt.Sprintf("%d",i))
 		userName := xlFile.GetCellValue(this.config.SheetName,this.config.NameCol+fmt.Sprintf("%d",i))
 		filename := "./template.xlsx"
@@ -112,7 +140,7 @@ func (this *SendMail) Start() {
 			return
 		}
 
-		for j := cb; j <= int('Z')+3;  j++{
+		for j := cb; j <= int('Z')+5;  j++{
 			col :=  string(j)
 			if j > int('Z') {
 				col = "A"+ string(j-int('Z')+int('A')-1)
@@ -127,14 +155,14 @@ func (this *SendMail) Start() {
 			if v1 == "" && v2 == "" {
 				break
 			}
-			//fmt.Printf("%s %s %s",col,v1,v2)
+			//fmt.Printf("%s %s %s %s",col,v1,v2,value)
 
 			value := xlFile.GetCellValue(this.config.SheetName,axis)
 			dstFile.SetCellValue(this.config.SheetName,col+fmt.Sprintf("%d",this.config.RowBegin),value)
 		}
-		value := dstFile.GetCellValue(this.config.SheetName,"AC"+fmt.Sprintf("%d",this.config.RowBegin))
+		value := dstFile.GetCellValue(this.config.SheetName,"AE"+fmt.Sprintf("%d",this.config.RowBegin))
 		if len(value) == 0 {
-			dstFile.SetCellValue(this.config.SheetName,"AC"+fmt.Sprintf("%d",this.config.RowBegin - 1),"")
+			dstFile.SetCellValue(this.config.SheetName,"AE"+fmt.Sprintf("%d",this.config.RowBegin - 1),"")
 		}
 
 		dstFile.SaveAs("temp/"+userName +" "+ fname)

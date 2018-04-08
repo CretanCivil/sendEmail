@@ -1,12 +1,12 @@
-file = "C:/Users/WXH/Desktop/template2.xlsx"
+file = "C:/Users/WXH/Desktop/1月工资条.xlsx"
 [excel]
     rowbegin = 2
     colbegin = "a"
     email = "a"
     name = "c"
-    sheet = "工资 "
+    sheet = "工资"
 [mail]
-    password = "Wang0000"
+    password = ""
     account = "wangxiaohua@91ruler.com"
     server = "smtp.exmail.qq.com"
     port = 25
